@@ -10,7 +10,7 @@
 
 const STATUS_KEY = "plugin-donathon-timer:status";
 const POINTS_KEY = "plugin-donathon-timer:points";
-const MINUTES_KEY = "plugin-donathon-timer:minutes";
+const SECONDS_KEY = "plugin-donathon-timer:seconds";
 const STARTED_AT_KEY = "plugin-donathon-timer:started_at";
 const PAUSE_KEY = "plugin-donathon-timer:pause_timestamp";
 const RUNNING_STATUS = "RUNNING";
@@ -18,7 +18,7 @@ const PAUSED_STATUS = "PAUSED";
 const STOPPED_STATUS = "STOPPED";
 
 let totalPoints = 0;
-let totalMinutes = 0;
+let totalSeconds = 0;
 let startedAt = null;
 let pausedAt = null;
 let timerInterval = null;
@@ -58,7 +58,7 @@ async function processEventQueue() {
 function processTimerTick() {
     const now = timerStatus == PAUSED_STATUS ? pausedAt : Date.now();
     const elapsed_ms = now - (startedAt || now);
-    const remaining_ms = totalMinutes * 60000 - elapsed_ms;
+    const remaining_ms = totalSeconds * 1000 - elapsed_ms;
     let status = timerStatus;
     if (status == RUNNING_STATUS && remaining_ms <= 0) {
         status = STOPPED_STATUS;
@@ -85,7 +85,7 @@ window.addEventListener("unichat:connected", function ({ detail: { userstore } }
     globalThis.UNICHAT_USERSTORE = userstore;
 
     totalPoints = parseInt(userstore[POINTS_KEY]|| "0", 10);
-    totalMinutes = parseInt(userstore[MINUTES_KEY]|| "0", 10);
+    totalSeconds = parseInt(userstore[SECONDS_KEY]|| "0", 10);
     const started_timestamp = parseInt(userstore[STARTED_AT_KEY] || "0", 10);
     startedAt = started_timestamp > 0 ? started_timestamp : null;
     timerStatus = userstore[STATUS_KEY] || STOPPED_STATUS;
@@ -142,8 +142,8 @@ window.addEventListener("unichat:userstore_update", function ({ detail: { key, v
     console.log(`Userstore update: ${key} = ${value}`);
     if (key === POINTS_KEY) {
         totalPoints = parseInt(value || "0", 10);
-    } else if (key === MINUTES_KEY) {
-        totalMinutes = parseInt(value || "0", 10);
+    } else if (key === SECONDS_KEY) {
+        totalSeconds = parseInt(value || "0", 10);
     } else if (key === STARTED_AT_KEY) {
         const started_timestamp = parseInt(value || "0", 10);
         startedAt = started_timestamp > 0 ? started_timestamp : null;
@@ -160,7 +160,7 @@ window.addEventListener("unichat:userstore_update", function ({ detail: { key, v
             }
         } else if (value === STOPPED_STATUS) {
             totalPoints = 0;
-            totalMinutes = 0;
+            totalSeconds = 0;
             startedAt = null;
             pausedAt = null;
             if (timerInterval != null) {

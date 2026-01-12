@@ -17,7 +17,7 @@ local time = require("unichat:time");
 
 local STATUS_KEY = "status";
 local POINTS_KEY = "points";
-local MINUTES_KEY = "minutes";
+local SECONDS_KEY = "seconds";
 local STARTED_AT_KEY = "started_at";
 local PAUSE_KEY = "pause_timestamp";
 local RUNNING_STATUS = "RUNNING";
@@ -46,31 +46,31 @@ end
 
 --[[ ====================================================================== ]]--
 
-local total_minutes = 0;
-local minutes_queue = {};
-local is_processing_minutes_queue = false;
-local function flush_minutes_queue()
-    if is_processing_minutes_queue then
+local total_seconds = 0;
+local seconds_queue = {};
+local is_processing_seconds_queue = false;
+local function flush_seconds_queue()
+    if is_processing_seconds_queue then
         return;
     end
 
-    is_processing_minutes_queue = true;
+    is_processing_seconds_queue = true;
 
-    while #minutes_queue > 0 do
-        local minutes_to_add = table.remove(minutes_queue, 1);
-        total_minutes = total_minutes + minutes_to_add;
-        UniChatAPI:set_userstore_item(MINUTES_KEY, tostring(total_minutes));
-        logger:info("Added {} minutes to donathon timer. Total minutes: {}", minutes_to_add, total_minutes);
+    while #seconds_queue > 0 do
+        local seconds_to_add = table.remove(seconds_queue, 1);
+        total_seconds = total_seconds + seconds_to_add;
+        UniChatAPI:set_userstore_item(SECONDS_KEY, tostring(total_seconds));
+        logger:info("Added {} seconds to donathon timer. Total seconds: {}", seconds_to_add, total_seconds);
     end
 
-    is_processing_minutes_queue = false;
+    is_processing_seconds_queue = false;
 end
 
 --[[ ====================================================================== ]]--
 
 ---@param event UniChatEvent
 local function on_event(event)
-    local minutes = 0;
+    local seconds = 0;
     local points = 0;
 
     if event.type == "unichat:donate" then
@@ -80,23 +80,23 @@ local function on_event(event)
         if data.platform == "twitch" then
             -- 100 bits = 1 point
             points = math.floor(data.value / 100);
-            minutes = math.floor(points * 7);
+            seconds = math.floor((points * 7) * 60);
         elseif data.platform == "youtube" then
             points = math.floor(data.value);
-            minutes = math.floor(points * 7);
+            seconds = math.floor((points * 7) * 60);
         end
     elseif event.type == "unichat:sponsor" then
         ---@type UniChatSponsorEventPayload
         local data = event.data;
 
         points = 1;
-        minutes = 7;
+        seconds = 7 * 60;
     elseif event.type == "unichat:sponsor_gift" then
         ---@type UniChatSponsorGiftEventPayload
         local data = event.data;
 
         points = data.count;
-        minutes = data.count * 7;
+        seconds = (data.count * 7) * 60;
     elseif event.type == "unichat:message" then
         ---@type UniChatMessageEventPayload
         local data = event.data;
@@ -114,7 +114,7 @@ local function on_event(event)
                     end
 
                     points = 0;
-                    minutes = 60 * 3;
+                    seconds = 3 * 60 * 60;
                     UniChatAPI:set_userstore_item(POINTS_KEY, "0");
                     UniChatAPI:set_userstore_item(STARTED_AT_KEY, tostring(time:now()));
                     UniChatAPI:set_userstore_item(STATUS_KEY, RUNNING_STATUS);
@@ -134,19 +134,19 @@ local function on_event(event)
                     end
 
                     local ms_gap = now_timestamp - pause_timestamp;
-                    local minutes_paused = math.floor(ms_gap / 60000);
-                    minutes = minutes_paused;
+                    local seconds_paused = math.floor(ms_gap / 1000);
+                    seconds = seconds_paused;
 
                     UniChatAPI:set_userstore_item(STATUS_KEY, RUNNING_STATUS);
                     UniChatAPI:notify("Donathon timer resumed.");
                 elseif cmd == "reset" then
                     UniChatAPI:set_userstore_item(POINTS_KEY, nil);
-                    UniChatAPI:set_userstore_item(MINUTES_KEY, nil);
+                    UniChatAPI:set_userstore_item(SECONDS_KEY, nil);
                     UniChatAPI:set_userstore_item(STARTED_AT_KEY, nil);
                     UniChatAPI:set_userstore_item(PAUSE_KEY, nil);
                     UniChatAPI:set_userstore_item(STATUS_KEY, STOPPED_STATUS);
                     total_points = 0;
-                    total_minutes = 0;
+                    total_seconds = 0;
                     UniChatAPI:notify("Donathon timer reset.");
                     return;
                 elseif cmd == "addpoints" then
@@ -157,14 +157,14 @@ local function on_event(event)
                     end
 
                     points = additional_points;
-                elseif cmd == "addminutes" then
-                    local additional_minutes = math.tointeger(args[3]);
-                    if additional_minutes == nil or additional_minutes <= 0 then
-                        UniChatAPI:notify("Invalid minutes amount. Usage: !donathon addminutes <minutes>");
+                elseif cmd == "addseconds" then
+                    local additional_seconds = math.tointeger(args[3]);
+                    if additional_seconds == nil or additional_seconds <= 0 then
+                        UniChatAPI:notify("Invalid seconds amount. Usage: !donathon addseconds <seconds>");
                         return;
                     end
 
-                    minutes = additional_minutes;
+                    seconds = additional_seconds;
                 else
                     UniChatAPI:notify("Unknown donathon command.");
                     return;
@@ -178,9 +178,9 @@ local function on_event(event)
         flush_points_queue();
     end
 
-    if minutes > 0 then
-        table.insert(minutes_queue, minutes);
-        flush_minutes_queue();
+    if seconds > 0 then
+        table.insert(seconds_queue, seconds);
+        flush_seconds_queue();
     end
 end
 
@@ -189,9 +189,9 @@ if stored_points ~= nil then
     total_points = math.tointeger(stored_points) or 0;
 end
 
-local stored_minutes = UniChatAPI:get_userstore_item(MINUTES_KEY);
-if stored_minutes ~= nil then
-    total_minutes = math.tointeger(stored_minutes) or 0;
+local stored_seconds = UniChatAPI:get_userstore_item(SECONDS_KEY);
+if stored_seconds ~= nil then
+    total_seconds = math.tointeger(stored_seconds) or 0;
 end
 
 local stored_status = UniChatAPI:get_userstore_item(STATUS_KEY);
