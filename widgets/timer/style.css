@@ -1,0 +1,101 @@
+/*!******************************************************************************
+ * Copyright (c) 2025 Voguh
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ ******************************************************************************/
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+
+html, body {
+    font-family: "Nunito", sans-serif;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+#main-container {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+}
+
+#main-container > .counter {
+    position: relative;
+    z-index: 20;
+    width: calc(100% - 32px);
+    padding: 16px;
+    border-radius: 8px;
+    background: #343a40;
+    color: #f8f9fa;
+    display: grid;
+    grid-template-areas: "ST TM" "PT PT";
+    grid-template-columns: min-content 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+}
+
+#main-container > .counter > div {
+    justify-self: center;
+    align-self: center;
+}
+
+#main-container > .counter > .timer {
+    grid-area: TM;
+    font-size: 48px;
+    font-weight: 800;
+}
+
+#main-container > .counter > .status {
+    grid-area: ST;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+#main-container > .counter > .points {
+    grid-area: PT;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+#main-container > .notification {
+    position: absolute;
+    z-index: 10;
+    bottom: 0;
+    left: 50%;
+    width: calc(100% - 64px);
+    transform: translateX(-50%);
+    opacity: 0;
+    background: #495057;
+    color: #f8f9fa;
+    border-radius: 0 0 8px 8px;
+    padding: 4px 8px;
+    text-align: center;
+    font-size: 16px;
+}
+
+@keyframes notificationEntry {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(100%);
+    }
+}
+
+#main-container > .notification.notify {
+    opacity: 1;
+    transform: translateX(-50%) translateY(100%);
+    animation: notificationEntry 250ms forwards, notificationEntry 250ms forwards reverse 2s;
+}
+
+#main-container > .notification > span {
+    color: #fcc419;
+    font-weight: 700;
+}
