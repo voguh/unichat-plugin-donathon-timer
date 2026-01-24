@@ -1,0 +1,64 @@
+/*!******************************************************************************
+ * Copyright (c) 2025 Voguh
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ ******************************************************************************/
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+
+html, body {
+    font-family: "Nunito", sans-serif;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+#main-container {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+}
+
+#main-container > .display {
+    position: relative;
+    z-index: 20;
+    width: calc(100% - 32px);
+    padding: 16px;
+    border-radius: 8px;
+    background: #343a40;
+    color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#main-container > .display > hr {
+    width: 100%;
+    border: 0;
+    height: 1px;
+    background: #495057;
+}
+
+#main-container > .display > div {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#main-container > .display > div > span.label {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+#main-container > .display > div > span.value {
+    font-size: 16px;
+    font-weight: 800;
+}

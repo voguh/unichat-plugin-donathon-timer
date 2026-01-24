@@ -24,6 +24,38 @@ local RUNNING_STATUS = "RUNNING";
 local PAUSED_STATUS = "PAUSED";
 local STOPPED_STATUS = "STOPPED";
 
+local SPONSORSHIP_POINTS_THRESHOLD_KEY = "sponsorship_points_threshold";
+local SPONSORSHIP_POINTS_TO_ADD_KEY = "sponsorship_points_to_add";
+local TWITCH_BITS_POINTS_THRESHOLD_KEY = "twitch_bits_points_threshold";
+local TWITCH_BITS_POINTS_TO_ADD_KEY = "twitch_bits_points_to_add";
+local DONATE_POINTS_THRESHOLD_KEY = "donate_points_threshold";
+local DONATE_POINTS_TO_ADD_KEY = "donate_points_to_add";
+
+local SPONSORSHIP_MINUTES_THRESHOLD_KEY = "sponsorship_minutes_threshold";
+local SPONSORSHIP_MINUTES_TO_ADD_KEY = "sponsorship_minutes_to_add";
+local TWITCH_BITS_MINUTES_THRESHOLD_KEY = "twitch_bits_minutes_threshold";
+local TWITCH_BITS_MINUTES_TO_ADD_KEY = "twitch_bits_minutes_to_add";
+local DONATE_MINUTES_THRESHOLD_KEY = "donate_minutes_threshold";
+local DONATE_MINUTES_TO_ADD_KEY = "donate_minutes_to_add";
+
+--[[ ====================================================================== ]]--
+
+local sponsorship_points_threshold = 1;
+local sponsorship_points_to_add = 1;
+local twitch_bits_points_threshold = 100;
+local twitch_bits_points_to_add = 1;
+local donate_points_threshold = 7;
+local donate_points_to_add = 1;
+
+local sponsorship_minutes_threshold = 1;
+local sponsorship_minutes_to_add = 5;
+local twitch_bits_minutes_threshold = 100;
+local twitch_bits_minutes_to_add = 7;
+local donate_minutes_threshold = 1;
+local donate_minutes_to_add = 1;
+
+--[[ ====================================================================== ]]--
+
 local total_points = 0;
 local points_queue = {};
 local is_processing_points_queue = false;
@@ -78,25 +110,24 @@ local function on_event(event)
         local data = event.data;
 
         if data.platform == "twitch" then
-            -- 100 bits = 1 point
-            points = math.floor(data.value / 100);
-            seconds = math.floor((points * 7) * 60);
+            points = math.floor(data.value / twitch_bits_points_threshold) * twitch_bits_points_to_add;
+            seconds = math.floor(data.value / twitch_bits_minutes_threshold) * twitch_bits_minutes_to_add * 60;
         elseif data.platform == "youtube" then
-            points = math.floor(data.value);
-            seconds = math.floor((points * 7) * 60);
+            points = math.floor(data.value / donate_points_threshold) * donate_points_to_add;
+            seconds = math.floor(data.value / donate_minutes_threshold) * donate_minutes_to_add * 60;
         end
     elseif event.type == "unichat:sponsor" then
         ---@type UniChatSponsorEventPayload
         local data = event.data;
 
-        points = 1;
-        seconds = 7 * 60;
+        points = math.floor(1 / sponsorship_points_threshold) * sponsorship_points_to_add;
+        seconds = math.floor(1 / sponsorship_minutes_threshold) * sponsorship_minutes_to_add * 60;
     elseif event.type == "unichat:sponsor_gift" then
         ---@type UniChatSponsorGiftEventPayload
         local data = event.data;
 
-        points = data.count;
-        seconds = (data.count * 7) * 60;
+        points = math.floor(data.count / sponsorship_points_threshold) * sponsorship_points_to_add;
+        seconds = math.floor(data.count / sponsorship_minutes_threshold) * sponsorship_minutes_to_add * 60;
     elseif event.type == "unichat:message" then
         ---@type UniChatMessageEventPayload
         local data = event.data;
@@ -107,7 +138,7 @@ local function on_event(event)
             if args[1] == "!donathon" then
                 local cmd = args[2];
 
-                if cmd == "begin" then
+                if cmd == "begin" and data.authorType == "BROADCASTER" then
                     if UniChatAPI:get_userstore_item(STATUS_KEY) ~= STOPPED_STATUS then
                         UniChatAPI:notify("Donathon timer is already running. Please reset it before starting a new one.");
                         return;
@@ -119,6 +150,16 @@ local function on_event(event)
                     UniChatAPI:set_userstore_item(STARTED_AT_KEY, tostring(time:now()));
                     UniChatAPI:set_userstore_item(STATUS_KEY, RUNNING_STATUS);
                     UniChatAPI:notify("Donathon timer started with 3 hours!");
+                elseif cmd == "reset" and data.authorType == "BROADCASTER" then
+                    UniChatAPI:set_userstore_item(POINTS_KEY, nil);
+                    UniChatAPI:set_userstore_item(SECONDS_KEY, nil);
+                    UniChatAPI:set_userstore_item(STARTED_AT_KEY, nil);
+                    UniChatAPI:set_userstore_item(PAUSE_KEY, nil);
+                    UniChatAPI:set_userstore_item(STATUS_KEY, STOPPED_STATUS);
+                    total_points = 0;
+                    total_seconds = 0;
+                    UniChatAPI:notify("Donathon timer reset.");
+                    return;
                 elseif cmd == "pause" then
                     UniChatAPI:set_userstore_item(PAUSE_KEY, tostring(time:now()));
                     UniChatAPI:set_userstore_item(STATUS_KEY, PAUSED_STATUS);
@@ -139,15 +180,73 @@ local function on_event(event)
 
                     UniChatAPI:set_userstore_item(STATUS_KEY, RUNNING_STATUS);
                     UniChatAPI:notify("Donathon timer resumed.");
-                elseif cmd == "reset" then
-                    UniChatAPI:set_userstore_item(POINTS_KEY, nil);
-                    UniChatAPI:set_userstore_item(SECONDS_KEY, nil);
-                    UniChatAPI:set_userstore_item(STARTED_AT_KEY, nil);
-                    UniChatAPI:set_userstore_item(PAUSE_KEY, nil);
-                    UniChatAPI:set_userstore_item(STATUS_KEY, STOPPED_STATUS);
-                    total_points = 0;
-                    total_seconds = 0;
-                    UniChatAPI:notify("Donathon timer reset.");
+                elseif cmd == "set" then
+                    local sub_cmd = args[3];                    
+                    if sub_cmd == nil or strings:is_empty(sub_cmd) then
+                        UniChatAPI:notify("Invalid set command. Usage: !donathon set <element> <value>");
+                        return;
+                    end
+
+                    local value = math.tointeger(args[4]);
+                    if value == nil or value < 0 then
+                        UniChatAPI:notify("Invalid value. Usage: !donathon set <element> <value>");
+                        return;
+                    end
+
+                    if sub_cmd == "sponsorship_points_threshold" or sub_cmd == "spt" then
+                        sponsorship_points_threshold = value;
+                        UniChatAPI:set_userstore_item(SPONSORSHIP_POINTS_THRESHOLD_KEY, tostring(sponsorship_points_threshold));
+                        UniChatAPI:notify("Sponsorship points threshold set to " .. tostring(sponsorship_points_threshold) .. ".");
+                    elseif sub_cmd == "sponsorship_points_to_add" or sub_cmd == "spta" then
+                        sponsorship_points_to_add = value;
+                        UniChatAPI:set_userstore_item(SPONSORSHIP_POINTS_TO_ADD_KEY, tostring(sponsorship_points_to_add));
+                        UniChatAPI:notify("Sponsorship points to add set to " .. tostring(sponsorship_points_to_add) .. ".");
+
+                    elseif sub_cmd == "twitch_bits_points_threshold" or sub_cmd == "tbpt" then
+                        twitch_bits_points_threshold = value;
+                        UniChatAPI:set_userstore_item(TWITCH_BITS_POINTS_THRESHOLD_KEY, tostring(twitch_bits_points_threshold));
+                        UniChatAPI:notify("Twitch bits points threshold set to " .. tostring(twitch_bits_points_threshold) .. ".");
+                    elseif sub_cmd == "twitch_bits_points_to_add" or sub_cmd == "tbpta" then
+                        twitch_bits_points_to_add = value;
+                        UniChatAPI:set_userstore_item(TWITCH_BITS_POINTS_TO_ADD_KEY, tostring(twitch_bits_points_to_add));
+                        UniChatAPI:notify("Twitch bits points to add set to " .. tostring(twitch_bits_points_to_add) .. ".");
+
+                    elseif sub_cmd == "donate_points_threshold" or sub_cmd == "dpt" then
+                        donate_points_threshold = value;
+                        UniChatAPI:set_userstore_item(DONATE_POINTS_THRESHOLD_KEY, tostring(donate_points_threshold));
+                        UniChatAPI:notify("Donate points threshold set to " .. tostring(donate_points_threshold) .. ".");
+                    elseif sub_cmd == "donate_points_to_add" or sub_cmd == "dpta" then
+                        donate_points_to_add = value;
+                        UniChatAPI:set_userstore_item(DONATE_POINTS_TO_ADD_KEY, tostring(donate_points_to_add));
+                        UniChatAPI:notify("Donate points to add set to " .. tostring(donate_points_to_add) .. ".");
+
+                    elseif sub_cmd == "sponsorship_minutes_threshold" or sub_cmd == "smt" then
+                        sponsorship_minutes_threshold = value;
+                        UniChatAPI:set_userstore_item(SPONSORSHIP_MINUTES_THRESHOLD_KEY, tostring(sponsorship_minutes_threshold));
+                        UniChatAPI:notify("Sponsorship minutes threshold set to " .. tostring(sponsorship_minutes_threshold) .. ".");
+                    elseif sub_cmd == "sponsorship_minutes_to_add" or sub_cmd == "smta" then
+                        sponsorship_minutes_to_add = value;
+                        UniChatAPI:set_userstore_item(SPONSORSHIP_MINUTES_TO_ADD_KEY, tostring(sponsorship_minutes_to_add));
+                        UniChatAPI:notify("Sponsorship minutes to add set to " .. tostring(sponsorship_minutes_to_add) .. ".");
+                    elseif sub_cmd == "twitch_bits_minutes_threshold" or sub_cmd == "tbmt" then
+                        twitch_bits_minutes_threshold = value;
+                        UniChatAPI:set_userstore_item(TWITCH_BITS_MINUTES_THRESHOLD_KEY, tostring(twitch_bits_minutes_threshold));
+                        UniChatAPI:notify("Twitch bits minutes threshold set to " .. tostring(twitch_bits_minutes_threshold) .. ".");
+                    elseif sub_cmd == "twitch_bits_minutes_to_add" or sub_cmd == "tbmta" then
+                        twitch_bits_minutes_to_add = value;
+                        UniChatAPI:set_userstore_item(TWITCH_BITS_MINUTES_TO_ADD_KEY, tostring(twitch_bits_minutes_to_add));
+                        UniChatAPI:notify("Twitch bits minutes to add set to " .. tostring(twitch_bits_minutes_to_add) .. ".");
+                    elseif sub_cmd == "donate_minutes_threshold" or sub_cmd == "dmt" then
+                        donate_minutes_threshold = value;
+                        UniChatAPI:set_userstore_item(DONATE_MINUTES_THRESHOLD_KEY, tostring(donate_minutes_threshold));
+                        UniChatAPI:notify("Donate minutes threshold set to " .. tostring(donate_minutes_threshold) .. ".");
+                    elseif sub_cmd == "donate_minutes_to_add" or sub_cmd == "dmta" then
+                        donate_minutes_to_add = value;
+                        UniChatAPI:set_userstore_item(DONATE_MINUTES_TO_ADD_KEY, tostring(donate_minutes_to_add));
+                        UniChatAPI:notify("Donate minutes to add set to " .. tostring(donate_minutes_to_add) .. ".");
+                    end
+                    
+                    UniChatAPI:notify("Unknown set command. Usage: !donathon set <element> <value>");
                     return;
                 elseif cmd == "addpoints" then
                     local additional_points = math.tointeger(args[3]);
@@ -165,6 +264,14 @@ local function on_event(event)
                     end
 
                     seconds = additional_seconds;
+                elseif cmd == "addminutes" then
+                    local additional_minutes = math.tointeger(args[3]);
+                    if additional_minutes == nil or additional_minutes <= 0 then
+                        UniChatAPI:notify("Invalid minutes amount. Usage: !donathon addminutes <minutes>");
+                        return;
+                    end
+
+                    seconds = additional_minutes * 60;
                 else
                     UniChatAPI:notify("Unknown donathon command.");
                     return;
@@ -183,6 +290,72 @@ local function on_event(event)
         flush_seconds_queue();
     end
 end
+
+--[[ ====================================================================== ]]--
+
+local stored_sponsorship_points_threshold = UniChatAPI:get_userstore_item(SPONSORSHIP_POINTS_THRESHOLD_KEY);
+if stored_sponsorship_points_threshold ~= nil then
+    sponsorship_points_threshold = math.tointeger(stored_sponsorship_points_threshold) or sponsorship_points_threshold;
+end
+
+local stored_sponsorship_points_to_add = UniChatAPI:get_userstore_item(SPONSORSHIP_POINTS_TO_ADD_KEY);
+if stored_sponsorship_points_to_add ~= nil then
+    sponsorship_points_to_add = math.tointeger(stored_sponsorship_points_to_add) or sponsorship_points_to_add;
+end
+
+local stored_twitch_bits_points_threshold = UniChatAPI:get_userstore_item(TWITCH_BITS_POINTS_THRESHOLD_KEY);
+if stored_twitch_bits_points_threshold ~= nil then
+    twitch_bits_points_threshold = math.tointeger(stored_twitch_bits_points_threshold) or twitch_bits_points_threshold;
+end
+
+local stored_twitch_bits_points_to_add = UniChatAPI:get_userstore_item(TWITCH_BITS_POINTS_TO_ADD_KEY);
+if stored_twitch_bits_points_to_add ~= nil then
+    twitch_bits_points_to_add = math.tointeger(stored_twitch_bits_points_to_add) or twitch_bits_points_to_add;
+end
+
+local stored_donate_points_threshold = UniChatAPI:get_userstore_item(DONATE_POINTS_THRESHOLD_KEY);;
+if stored_donate_points_threshold ~= nil then
+    donate_points_threshold = math.tointeger(stored_donate_points_threshold) or donate_points_threshold;
+end
+
+local stored_donate_points_to_add = UniChatAPI:get_userstore_item(DONATE_POINTS_TO_ADD_KEY);
+if stored_donate_points_to_add ~= nil then
+    donate_points_to_add = math.tointeger(stored_donate_points_to_add) or donate_points_to_add;
+end
+
+--[[ ====================================================================== ]]--
+
+local stored_sponsorship_minutes_threshold = UniChatAPI:get_userstore_item(SPONSORSHIP_MINUTES_THRESHOLD_KEY);
+if stored_sponsorship_minutes_threshold ~= nil then
+    sponsorship_minutes_threshold = math.tointeger(stored_sponsorship_minutes_threshold) or sponsorship_minutes_threshold;
+end
+
+local stored_sponsorship_minutes_to_add = UniChatAPI:get_userstore_item(SPONSORSHIP_MINUTES_TO_ADD_KEY);
+if stored_sponsorship_minutes_to_add ~= nil then
+    sponsorship_minutes_to_add = math.tointeger(stored_sponsorship_minutes_to_add) or sponsorship_minutes_to_add;
+end
+
+local stored_twitch_bits_minutes_threshold = UniChatAPI:get_userstore_item(TWITCH_BITS_MINUTES_THRESHOLD_KEY);
+if stored_twitch_bits_minutes_threshold ~= nil then
+    twitch_bits_minutes_threshold = math.tointeger(stored_twitch_bits_minutes_threshold) or twitch_bits_minutes_threshold;
+end
+
+local stored_twitch_bits_minutes_to_add = UniChatAPI:get_userstore_item(TWITCH_BITS_MINUTES_TO_ADD_KEY);
+if stored_twitch_bits_minutes_to_add ~= nil then
+    twitch_bits_minutes_to_add = math.tointeger(stored_twitch_bits_minutes_to_add) or twitch_bits_minutes_to_add;
+end
+
+local stored_donate_minutes_threshold = UniChatAPI:get_userstore_item(DONATE_MINUTES_THRESHOLD_KEY);
+if stored_donate_minutes_threshold ~= nil then
+    donate_minutes_threshold = math.tointeger(stored_donate_minutes_threshold) or donate_minutes_threshold;
+end
+
+local stored_donate_minutes_to_add = UniChatAPI:get_userstore_item(DONATE_MINUTES_TO_ADD_KEY);
+if stored_donate_minutes_to_add ~= nil then
+    donate_minutes_to_add = math.tointeger(stored_donate_minutes_to_add) or donate_minutes_to_add;
+end
+
+--[[ ====================================================================== ]]--
 
 local stored_points = UniChatAPI:get_userstore_item(POINTS_KEY);
 if stored_points ~= nil then

@@ -69,11 +69,11 @@ function processTimerTick() {
         const display_minutes = Math.floor((remaining_ms % 3600000) / 60000).toString().padStart(2, '0');
         const display_seconds = Math.floor((remaining_ms % 60000) / 1000).toString().padStart(2, '0');
         
-        STATUS_ELEMENT.textContent = status === RUNNING_STATUS ? "▶️" : "⏸️";
+        STATUS_ELEMENT.innerHTML = status === RUNNING_STATUS ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
         TIMER_ELEMENT.textContent = `${display_hours}:${display_minutes}:${display_seconds}`;
         POINTS_ELEMENT.textContent = `${totalPoints} points`;
     } else if (status === STOPPED_STATUS) {
-        STATUS_ELEMENT.textContent = "⏹️";
+        STATUS_ELEMENT.innerHTML = '<i class="fas fa-stop"></i>';
         TIMER_ELEMENT.textContent = "00:00:00";
         POINTS_ELEMENT.textContent = `${totalPoints} points`;
     }
@@ -139,7 +139,6 @@ window.addEventListener("unichat:event", function ({ detail: event }) {
 });
 
 window.addEventListener("unichat:userstore_update", function ({ detail: { key, value } }) {
-    console.log(`Userstore update: ${key} = ${value}`);
     if (key === POINTS_KEY) {
         totalPoints = parseInt(value || "0", 10);
     } else if (key === SECONDS_KEY) {
