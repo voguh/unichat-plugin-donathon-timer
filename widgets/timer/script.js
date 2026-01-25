@@ -120,16 +120,16 @@ function processTimerTick() {
         STATUS_ELEMENT.innerHTML = status === RUNNING_STATUS ? '<i class="fas fa-stopwatch"></i>' : '<i class="fas fa-bed"></i>';
         TIMER_ELEMENT.textContent = `${display_hours}:${display_minutes}:${display_seconds}`;
         POINTS_ELEMENT.textContent = `${totalPoints} ${POINTS_LABEL}`;
-
-        if (isDoubleMode) {
-            DOUBLE_MODE_ELEMENT.style.display = "block";
-        } else {
-            DOUBLE_MODE_ELEMENT.style.display = "none";
-        }
     } else if (status === STOPPED_STATUS) {
         STATUS_ELEMENT.innerHTML = '<i class="fas fa-stop"></i>';
         TIMER_ELEMENT.textContent = "00:00:00";
         POINTS_ELEMENT.textContent = `${totalPoints} ${POINTS_LABEL}`;
+    }
+
+    if (isDoubleMode) {
+        DOUBLE_MODE_ELEMENT.style.display = "block";
+    } else {
+        DOUBLE_MODE_ELEMENT.style.display = "none";
     }
 }
 
