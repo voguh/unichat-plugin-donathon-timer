@@ -52,7 +52,7 @@ html, body {
 
 #main-container > .counter > .status {
     grid-area: ST;
-    font-size: 24px;
+    font-size: 32px;
     font-weight: 600;
 }
 
@@ -60,6 +60,18 @@ html, body {
     grid-area: PT;
     font-size: 20px;
     font-weight: 500;
+}
+
+#main-container > .counter > .double-mode {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #fcc419;
+    color: #212529;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 18px;
 }
 
 #main-container > .notification {

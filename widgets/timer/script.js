@@ -23,6 +23,7 @@ const YOUTUBE_SPONSORGIFT_MESSAGE = "{{youtubeSponsorGiftMessage}}";
 const GENERIC_SPONSORGIFT_MESSAGE = "{{genericSponsorGiftMessage}}";
 /* <<== END FIELDS TO JS VARIABLES ==>> */
 
+const IS_DOUBLE_MODE_KEY = "plugin-donathon-timer:is_double_mode";
 const STATUS_KEY = "plugin-donathon-timer:status";
 const POINTS_KEY = "plugin-donathon-timer:points";
 const SECONDS_KEY = "plugin-donathon-timer:seconds";
@@ -31,6 +32,8 @@ const PAUSE_KEY = "plugin-donathon-timer:pause_timestamp";
 const RUNNING_STATUS = "RUNNING";
 const PAUSED_STATUS = "PAUSED";
 const STOPPED_STATUS = "STOPPED";
+
+let isDoubleMode = false;
 
 let totalPoints = 0;
 let totalSeconds = 0;
@@ -47,6 +50,7 @@ let isProcessingQueue = false;
 const STATUS_ELEMENT = document.querySelector("#main-container > .counter > .status");
 const TIMER_ELEMENT = document.querySelector("#main-container > .counter > .timer");
 const POINTS_ELEMENT = document.querySelector("#main-container > .counter > .points");
+const DOUBLE_MODE_ELEMENT = document.querySelector("#main-container > .counter > .double-mode");
 const NOTIFICATION_ELEMENT = document.querySelector("#main-container > .notification");
 
 /* ========================================================================== */
@@ -113,9 +117,15 @@ function processTimerTick() {
         const display_minutes = Math.floor((remaining_ms % 3600000) / 60000).toString().padStart(2, '0');
         const display_seconds = Math.floor((remaining_ms % 60000) / 1000).toString().padStart(2, '0');
         
-        STATUS_ELEMENT.innerHTML = status === RUNNING_STATUS ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+        STATUS_ELEMENT.innerHTML = status === RUNNING_STATUS ? '<i class="fas fa-stopwatch"></i>' : '<i class="fas fa-bed"></i>';
         TIMER_ELEMENT.textContent = `${display_hours}:${display_minutes}:${display_seconds}`;
         POINTS_ELEMENT.textContent = `${totalPoints} ${POINTS_LABEL}`;
+
+        if (isDoubleMode) {
+            DOUBLE_MODE_ELEMENT.style.display = "block";
+        } else {
+            DOUBLE_MODE_ELEMENT.style.display = "none";
+        }
     } else if (status === STOPPED_STATUS) {
         STATUS_ELEMENT.innerHTML = '<i class="fas fa-stop"></i>';
         TIMER_ELEMENT.textContent = "00:00:00";
@@ -130,6 +140,7 @@ window.addEventListener("unichat:connected", function ({ detail: { userstore } }
 
     totalPoints = parseInt(userstore[POINTS_KEY]|| "0", 10);
     totalSeconds = parseInt(userstore[SECONDS_KEY]|| "0", 10);
+    isDoubleMode = userstore[IS_DOUBLE_MODE_KEY] === "true";
     const started_timestamp = parseInt(userstore[STARTED_AT_KEY] || "0", 10);
     startedAt = started_timestamp > 0 ? started_timestamp : null;
     timerStatus = userstore[STATUS_KEY] || STOPPED_STATUS;
@@ -141,6 +152,7 @@ window.addEventListener("unichat:connected", function ({ detail: { userstore } }
     }
     timerInterval = setInterval(processTimerTick, 1000);
     processTimerTick();
+
 });
 
 window.addEventListener("unichat:event", function ({ detail: event }) {
@@ -213,5 +225,7 @@ window.addEventListener("unichat:userstore_update", function ({ detail: { key, v
 
             processTimerTick();
         }
+    } else if (key === IS_DOUBLE_MODE_KEY) {
+        isDoubleMode = value === "true";
     }
 });

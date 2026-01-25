@@ -38,6 +38,8 @@ local TWITCH_BITS_MINUTES_TO_ADD_KEY = "twitch_bits_minutes_to_add";
 local DONATE_MINUTES_THRESHOLD_KEY = "donate_minutes_threshold";
 local DONATE_MINUTES_TO_ADD_KEY = "donate_minutes_to_add";
 
+local IS_DOUBLE_MODE_KEY = "is_double_mode";
+
 --[[ ====================================================================== ]]--
 
 local sponsorship_points_threshold = 1;
@@ -53,6 +55,8 @@ local twitch_bits_minutes_threshold = 100;
 local twitch_bits_minutes_to_add = 7;
 local donate_minutes_threshold = 1;
 local donate_minutes_to_add = 1;
+
+local is_double_mode = false;
 
 --[[ ====================================================================== ]]--
 
@@ -180,6 +184,27 @@ local function on_event(event)
 
                     UniChatAPI:set_userstore_item(STATUS_KEY, RUNNING_STATUS);
                     UniChatAPI:notify("Donathon timer resumed.");
+                elseif cmd == "double" then
+                    if is_double_mode then
+                        is_double_mode = false;
+                        sponsorship_minutes_to_add = sponsorship_minutes_to_add / 2;
+                        twitch_bits_minutes_to_add = twitch_bits_minutes_to_add / 2;
+                        donate_minutes_to_add = donate_minutes_to_add / 2;
+                        UniChatAPI:notify("Donathon timer double mode disabled.");
+                    else
+                        is_double_mode = true;
+                        sponsorship_minutes_to_add = sponsorship_minutes_to_add * 2;
+                        twitch_bits_minutes_to_add = twitch_bits_minutes_to_add * 2;
+                        donate_minutes_to_add = donate_minutes_to_add * 2;
+                        UniChatAPI:notify("Donathon timer double mode enabled.");
+                    end
+
+                    UniChatAPI:set_userstore_item(SPONSORSHIP_MINUTES_TO_ADD_KEY, tostring(sponsorship_minutes_to_add));
+                    UniChatAPI:set_userstore_item(TWITCH_BITS_MINUTES_TO_ADD_KEY, tostring(twitch_bits_minutes_to_add));
+                    UniChatAPI:set_userstore_item(DONATE_MINUTES_TO_ADD_KEY, tostring(donate_minutes_to_add));
+                    UniChatAPI:set_userstore_item(IS_DOUBLE_MODE_KEY, tostring(is_double_mode));
+
+                    return;
                 elseif cmd == "set" then
                     local sub_cmd = args[3];                    
                     if sub_cmd == nil or strings:is_empty(sub_cmd) then
@@ -197,53 +222,67 @@ local function on_event(event)
                         sponsorship_points_threshold = value;
                         UniChatAPI:set_userstore_item(SPONSORSHIP_POINTS_THRESHOLD_KEY, tostring(sponsorship_points_threshold));
                         UniChatAPI:notify("Sponsorship points threshold set to " .. tostring(sponsorship_points_threshold) .. ".");
+                        return;
                     elseif sub_cmd == "sponsorship_points_to_add" or sub_cmd == "spta" then
                         sponsorship_points_to_add = value;
                         UniChatAPI:set_userstore_item(SPONSORSHIP_POINTS_TO_ADD_KEY, tostring(sponsorship_points_to_add));
                         UniChatAPI:notify("Sponsorship points to add set to " .. tostring(sponsorship_points_to_add) .. ".");
+                        return;
 
                     elseif sub_cmd == "twitch_bits_points_threshold" or sub_cmd == "tbpt" then
                         twitch_bits_points_threshold = value;
                         UniChatAPI:set_userstore_item(TWITCH_BITS_POINTS_THRESHOLD_KEY, tostring(twitch_bits_points_threshold));
                         UniChatAPI:notify("Twitch bits points threshold set to " .. tostring(twitch_bits_points_threshold) .. ".");
+                        return;
                     elseif sub_cmd == "twitch_bits_points_to_add" or sub_cmd == "tbpta" then
                         twitch_bits_points_to_add = value;
                         UniChatAPI:set_userstore_item(TWITCH_BITS_POINTS_TO_ADD_KEY, tostring(twitch_bits_points_to_add));
                         UniChatAPI:notify("Twitch bits points to add set to " .. tostring(twitch_bits_points_to_add) .. ".");
+                        return;
 
                     elseif sub_cmd == "donate_points_threshold" or sub_cmd == "dpt" then
                         donate_points_threshold = value;
                         UniChatAPI:set_userstore_item(DONATE_POINTS_THRESHOLD_KEY, tostring(donate_points_threshold));
                         UniChatAPI:notify("Donate points threshold set to " .. tostring(donate_points_threshold) .. ".");
+                        return;
                     elseif sub_cmd == "donate_points_to_add" or sub_cmd == "dpta" then
                         donate_points_to_add = value;
                         UniChatAPI:set_userstore_item(DONATE_POINTS_TO_ADD_KEY, tostring(donate_points_to_add));
                         UniChatAPI:notify("Donate points to add set to " .. tostring(donate_points_to_add) .. ".");
+                        return;
 
                     elseif sub_cmd == "sponsorship_minutes_threshold" or sub_cmd == "smt" then
                         sponsorship_minutes_threshold = value;
                         UniChatAPI:set_userstore_item(SPONSORSHIP_MINUTES_THRESHOLD_KEY, tostring(sponsorship_minutes_threshold));
                         UniChatAPI:notify("Sponsorship minutes threshold set to " .. tostring(sponsorship_minutes_threshold) .. ".");
+                        return;
                     elseif sub_cmd == "sponsorship_minutes_to_add" or sub_cmd == "smta" then
                         sponsorship_minutes_to_add = value;
                         UniChatAPI:set_userstore_item(SPONSORSHIP_MINUTES_TO_ADD_KEY, tostring(sponsorship_minutes_to_add));
                         UniChatAPI:notify("Sponsorship minutes to add set to " .. tostring(sponsorship_minutes_to_add) .. ".");
+                        return;
+
                     elseif sub_cmd == "twitch_bits_minutes_threshold" or sub_cmd == "tbmt" then
                         twitch_bits_minutes_threshold = value;
                         UniChatAPI:set_userstore_item(TWITCH_BITS_MINUTES_THRESHOLD_KEY, tostring(twitch_bits_minutes_threshold));
                         UniChatAPI:notify("Twitch bits minutes threshold set to " .. tostring(twitch_bits_minutes_threshold) .. ".");
+                        return;
                     elseif sub_cmd == "twitch_bits_minutes_to_add" or sub_cmd == "tbmta" then
                         twitch_bits_minutes_to_add = value;
                         UniChatAPI:set_userstore_item(TWITCH_BITS_MINUTES_TO_ADD_KEY, tostring(twitch_bits_minutes_to_add));
                         UniChatAPI:notify("Twitch bits minutes to add set to " .. tostring(twitch_bits_minutes_to_add) .. ".");
+                        return;
+
                     elseif sub_cmd == "donate_minutes_threshold" or sub_cmd == "dmt" then
                         donate_minutes_threshold = value;
                         UniChatAPI:set_userstore_item(DONATE_MINUTES_THRESHOLD_KEY, tostring(donate_minutes_threshold));
                         UniChatAPI:notify("Donate minutes threshold set to " .. tostring(donate_minutes_threshold) .. ".");
+                        return;
                     elseif sub_cmd == "donate_minutes_to_add" or sub_cmd == "dmta" then
                         donate_minutes_to_add = value;
                         UniChatAPI:set_userstore_item(DONATE_MINUTES_TO_ADD_KEY, tostring(donate_minutes_to_add));
                         UniChatAPI:notify("Donate minutes to add set to " .. tostring(donate_minutes_to_add) .. ".");
+                        return;
                     end
                     
                     UniChatAPI:notify("Unknown set command. Usage: !donathon set <element> <value>");
@@ -356,6 +395,11 @@ if stored_donate_minutes_to_add ~= nil then
 end
 
 --[[ ====================================================================== ]]--
+
+local stored_is_double_mode = UniChatAPI:get_userstore_item(IS_DOUBLE_MODE_KEY);
+if stored_is_double_mode == nil then
+    is_double_mode = stored_is_double_mode == "true";
+end
 
 local stored_points = UniChatAPI:get_userstore_item(POINTS_KEY);
 if stored_points ~= nil then

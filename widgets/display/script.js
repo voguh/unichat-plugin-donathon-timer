@@ -25,6 +25,7 @@ const DONATE_MINUTES_TO_ADD_KEY = "plugin-donathon-timer:donate_minutes_to_add";
 const STATUS_KEY = "plugin-donathon-timer:status";
 const POINTS_KEY = "plugin-donathon-timer:points";
 const SECONDS_KEY = "plugin-donathon-timer:seconds";
+const IS_DOUBLE_MODE_KEY = "plugin-donathon-timer:is_double_mode";
 
 const RUNNING_STATUS = "RUNNING";
 const PAUSED_STATUS = "PAUSED";
@@ -56,6 +57,7 @@ let donateMinutesToAdd = 1;
 let timerStatus = STOPPED_STATUS;
 let totalPoints = 0;
 let totalSeconds = 0;
+let isDoubleMode = false;
 
 /* ========================================================================== */
 
@@ -108,6 +110,7 @@ function updateDisplay() {
     displayContainer.appendChild(buildLabelWithValue("Timer Status", timerStatus));
     displayContainer.appendChild(buildLabelWithValue("Total Points", totalPoints));
     displayContainer.appendChild(buildLabelWithValue("Total Time", secondsToHMS(totalSeconds)));
+    displayContainer.appendChild(buildLabelWithValue("Double Mode", isDoubleMode ? "Enabled" : "Disabled"));
 
     MAIN_CONTAINER.replaceChildren(displayContainer);
 }
@@ -199,6 +202,11 @@ window.addEventListener("unichat:connected", function ({ detail: { userstore } }
     let storedTotalSeconds = parseInt(userstore[SECONDS_KEY]);
     if (!Number.isNaN(storedTotalSeconds)) {
         totalSeconds = storedTotalSeconds;
+    }
+
+    let storedIsDoubleMode = userstore[IS_DOUBLE_MODE_KEY];
+    if (storedIsDoubleMode === "true" || storedIsDoubleMode === "false") {
+        isDoubleMode = storedIsDoubleMode === "true";
     }
 
     requestAnimationFrame(debouncedUpdateDisplay);
@@ -332,6 +340,13 @@ window.addEventListener("unichat:userstore_update", function ({ detail: { key, v
             let parsedValue = parseInt(value);
             if (!Number.isNaN(parsedValue)) {
                 totalSeconds = parsedValue;
+            }
+            break;
+        }
+
+        case IS_DOUBLE_MODE_KEY: {
+            if (value === "true" || value === "false") {
+                isDoubleMode = value === "true";
             }
             break;
         }
