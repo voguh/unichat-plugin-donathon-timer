@@ -8,6 +8,21 @@
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
 
+/* <<==== FIELDS TO JS VARIABLES ====>> */
+const POINTS_LABEL = "{{pointsLabel}}";
+
+const TWITCH_DONATE_MESSAGE = "{{twitchDonateMessage}}";
+const GENERIC_DONATE_MESSAGE = "{{genericDonateMessage}}";
+
+const TWITCH_SPONSORSHIP_MESSAGE = "{{twitchSponsorshipMessage}}";
+const YOUTUBE_SPONSORSHIP_MESSAGE = "{{youtubeSponsorshipMessage}}";
+const GENERIC_SPONSORSHIP_MESSAGE = "{{genericSponsorshipMessage}}";
+
+const TWITCH_SPONSORGIFT_MESSAGE = "{{twitchSponsorGiftMessage}}";
+const YOUTUBE_SPONSORGIFT_MESSAGE = "{{youtubeSponsorGiftMessage}}";
+const GENERIC_SPONSORGIFT_MESSAGE = "{{genericSponsorGiftMessage}}";
+/* <<== END FIELDS TO JS VARIABLES ==>> */
+
 const STATUS_KEY = "plugin-donathon-timer:status";
 const POINTS_KEY = "plugin-donathon-timer:points";
 const SECONDS_KEY = "plugin-donathon-timer:seconds";
@@ -33,6 +48,35 @@ const STATUS_ELEMENT = document.querySelector("#main-container > .counter > .sta
 const TIMER_ELEMENT = document.querySelector("#main-container > .counter > .timer");
 const POINTS_ELEMENT = document.querySelector("#main-container > .counter > .points");
 const NOTIFICATION_ELEMENT = document.querySelector("#main-container > .notification");
+
+/* ========================================================================== */
+
+function parseTierName(platform, tier) {
+    if (platform === "twitch" && tier.toLowerCase() !== "prime") {
+        return parseInt(tier, 10) / 1000
+    }
+
+    return tier || "sponsorship";
+}
+
+function enrichMessage(text, data) {
+    let enrichedText = text;
+
+    for (const [rawKey, value] of Object.entries(data)) {
+        const key = `{${rawKey}}`;
+        const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+
+        if (rawKey === "tier") {
+            enrichedText = enrichedText.replaceAll(key, parseTierName(data.platform, value));
+            enrichedText = enrichedText.replaceAll(snakeKey, parseTierName(data.platform, value));
+        } else {
+            enrichedText = enrichedText.replaceAll(key, value);
+            enrichedText = enrichedText.replaceAll(snakeKey, value);
+        }
+    }
+
+    return enrichedText;
+}
 
 /* ========================================================================== */
 
@@ -71,11 +115,11 @@ function processTimerTick() {
         
         STATUS_ELEMENT.innerHTML = status === RUNNING_STATUS ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
         TIMER_ELEMENT.textContent = `${display_hours}:${display_minutes}:${display_seconds}`;
-        POINTS_ELEMENT.textContent = `${totalPoints} points`;
+        POINTS_ELEMENT.textContent = `${totalPoints} ${POINTS_LABEL}`;
     } else if (status === STOPPED_STATUS) {
         STATUS_ELEMENT.innerHTML = '<i class="fas fa-stop"></i>';
         TIMER_ELEMENT.textContent = "00:00:00";
-        POINTS_ELEMENT.textContent = `${totalPoints} points`;
+        POINTS_ELEMENT.textContent = `${totalPoints} ${POINTS_LABEL}`;
     }
 }
 
@@ -107,31 +151,31 @@ window.addEventListener("unichat:event", function ({ detail: event }) {
         const data = event.data;
 
         if (data.platform === "twitch") {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> cheered <span>${data.value} bits</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(TWITCH_DONATE_MESSAGE, data));
         } else {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> donated <span>${data.currency} ${data.value}</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(GENERIC_DONATE_MESSAGE, data));
         }
     } else if (event.type === "unichat:sponsor") {
         /** @type {import("../unichat").UniChatEventSponsor['data']} */
         const data = event.data;
 
         if (data.platform === "twitch") {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> become a subscriber with <span>${data.months} months</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(TWITCH_SPONSORSHIP_MESSAGE, data));
         } else if (data.platform === "youtube") {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> become a member with <span>${data.months} months</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(YOUTUBE_SPONSORSHIP_MESSAGE, data));
         } else {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> become a sponsor with <span>${data.months} months</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(GENERIC_SPONSORSHIP_MESSAGE, data));
         }
     } else if (event.type === "unichat:sponsor_gift") {
         /** @type {import("../unichat").UniChatEventSponsorGift['data']} */
         const data = event.data;
 
         if (data.platform === "twitch") {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> gifted <span>${data.count} subscriptions</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(TWITCH_SPONSORGIFT_MESSAGE, data));
         } else if (data.platform === "youtube") {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> gifted <span>${data.count} memberships</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(YOUTUBE_SPONSORGIFT_MESSAGE, data));
         } else {
-            NOTIFICATION_QUEUE.push(`<span>${data.authorDisplayName}</span> gifted <span>${data.count} sponsorships</span>!`);
+            NOTIFICATION_QUEUE.push(enrichMessage(GENERIC_SPONSORGIFT_MESSAGE, data));
         }
     }
 

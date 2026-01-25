@@ -1,0 +1,59 @@
+{
+    "$schema": "https://cdn.statically.io/gh/voguh/unichat/1.4.1/widgets/fields-schema.json",
+    "pointsLabel": {
+        "type": "text",
+        "label": "Points label",
+        "value": "points"
+    },
+
+    "twitchDonateMessage": {
+        "type": "textarea",
+        "group": "Donate",
+        "label": "Twitch bits message",
+        "value": "<span>{authorDisplayName}</span> cheered <span>{value} bits</span>!"
+    },
+    "genericDonateMessage": {
+        "type": "textarea",
+        "group": "Donate",
+        "label": "Generic donate message",
+        "value": "<span>{authorDisplayName}</span> donated <span>{currency} {value}</span>!"
+    },
+
+    "twitchSponsorshipMessage": {
+        "type": "textarea",
+        "group": "Sponsorship",
+        "label": "Twitch subscription message",
+        "value": "<span>{authorDisplayName}</span> become a subscriber for <span>{months} months</span>!"
+    },
+    "youtubeSponsorshipMessage": {
+        "type": "textarea",
+        "group": "Sponsorship",
+        "label": "YouTube sponsorship message",
+        "value": "<span>{authorDisplayName}</span> became a member for <span>{months} months</span>!"
+    },
+    "genericSponsorshipMessage": {
+        "type": "textarea",
+        "group": "Sponsorship",
+        "label": "Generic sponsorship message",
+        "value": "<span>{authorDisplayName}</span> became a sponsor for <span>{months} months</span>!"
+    },
+
+    "twitchSponsorGiftMessage": {
+        "type": "textarea",
+        "group": "Sponsor Gift",
+        "label": "Twitch sponsorship gift message",
+        "value": "<span>{senderDisplayName}</span> gifted <span>{count} subscriptions</span>!"
+    },
+    "youtubeSponsorGiftMessage": {
+        "type": "textarea",
+        "group": "Sponsor Gift",
+        "label": "YouTube sponsorship gift message",
+        "value": "<span>{senderDisplayName}</span> gifted <span>{count} memberships</span>!"
+    },
+    "genericSponsorGiftMessage": {
+        "type": "textarea",
+        "group": "Sponsor Gift",
+        "label": "Generic sponsorship gift message",
+        "value": "<span>{senderDisplayName}</span> gifted <span>{count} sponsorships</span>!"
+    }
+}
