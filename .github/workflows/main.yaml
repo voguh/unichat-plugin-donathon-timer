@@ -46,11 +46,11 @@ jobs:
         run: |
           PLUGIN_NAME="$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2 | sed -e 's/^unichat-//')"
           mkdir -p "dist/${PLUGIN_NAME}"
-          cp -r assets "dist/${PLUGIN_NAME}/"
+          cp -r assets "dist/${PLUGIN_NAME}/" || echo "No assets directory to copy."
           cp -r data "dist/${PLUGIN_NAME}/"
-          cp -r widgets "dist/${PLUGIN_NAME}/"
-          cp icon.png "dist/${PLUGIN_NAME}/"
-          cp LICENSE "dist/${PLUGIN_NAME}/"
+          cp -r widgets "dist/${PLUGIN_NAME}/" || echo "No widgets directory to copy."
+          cp icon.png "dist/${PLUGIN_NAME}/" || echo "No icon.png file to copy."
+          cp LICENSE "dist/${PLUGIN_NAME}/" || echo "No LICENSE file to copy."
           cp manifest.yaml "dist/${PLUGIN_NAME}/"
 
       - name: Create ZIP Archive
