@@ -60,7 +60,7 @@ jobs:
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           ZIP_FILE="${PLUGIN_NAME}-${TAG_NAME}.zip"
           echo "Creating ZIP archive: $ZIP_FILE"
-          zip -r "$ZIP_FILE" "dist" -x "**/fieldstate.json"
+          zip -r "$ZIP_FILE" "dist/${PLUGIN_NAME}" -x "**/fieldstate.json"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
