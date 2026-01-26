@@ -44,36 +44,36 @@ jobs:
           fi
       - name: Prepare Folder to ZIP
         run: |
-          PLUGIN_NAME="$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2 | sed -e 's/^unichat-//')"
-          mkdir -p "dist/${PLUGIN_NAME}"
-          cp -r assets "dist/${PLUGIN_NAME}/" || echo "No assets directory to copy."
-          cp -r data "dist/${PLUGIN_NAME}/"
-          cp -r widgets "dist/${PLUGIN_NAME}/" || echo "No widgets directory to copy."
-          cp icon.png "dist/${PLUGIN_NAME}/" || echo "No icon.png file to copy."
-          cp LICENSE "dist/${PLUGIN_NAME}/" || echo "No LICENSE file to copy."
-          cp manifest.yaml "dist/${PLUGIN_NAME}/"
+          MANIFEST_NAME="$(yq e '.name' manifest.yaml)"
+          mkdir -p "dist/${MANIFEST_NAME}"
+          cp -r assets "dist/${MANIFEST_NAME}/" || echo "No assets directory to copy."
+          cp -r data "dist/${MANIFEST_NAME}/"
+          cp -r widgets "dist/${MANIFEST_NAME}/" || echo "No widgets directory to copy."
+          cp icon.png "dist/${MANIFEST_NAME}/" || echo "No icon.png file to copy."
+          cp LICENSE "dist/${MANIFEST_NAME}/" || echo "No LICENSE file to copy."
+          cp manifest.yaml "dist/${MANIFEST_NAME}/"
 
       - name: Create ZIP Archive
         id: prepare_release
         run: |
-          PLUGIN_NAME="$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2 | sed -e 's/^unichat-//')"
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
-          ZIP_FILE="${PLUGIN_NAME}-${TAG_NAME}.zip"
+          MANIFEST_NAME="$(yq e '.name' manifest.yaml)"
+          MANIFEST_VERSION="$(yq e '.version' manifest.yaml)"
+          ZIP_FILE="${MANIFEST_NAME}-${MANIFEST_VERSION}.zip"
           echo "Creating ZIP archive: $ZIP_FILE"
-          zip -r "$ZIP_FILE" "dist/${PLUGIN_NAME}" -x "**/fieldstate.json"
+          cd dist && zip -r "$ZIP_FILE" "${MANIFEST_NAME}" -x "**/fieldstate.json"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          PLUGIN_NAME="$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2 | sed -e 's/^unichat-//')"
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
-          ZIP_FILE="${PLUGIN_NAME}-${TAG_NAME}.zip"
+          MANIFEST_NAME="$(yq e '.name' manifest.yaml)"
+          MANIFEST_VERSION="$(yq e '.version' manifest.yaml)"
+          ZIP_FILE="${MANIFEST_NAME}-${MANIFEST_VERSION}.zip"
           if [ -n "$(command -v gh)" ]; then
-            echo "Creating GitHub Release for tag $TAG_NAME"
+            echo "Creating GitHub Release for tag $MANIFEST_VERSION"
             echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-            gh release create "$TAG_NAME" --prerelease
+            gh release create "$MANIFEST_VERSION" --prerelease
             echo "Uploading $ZIP_FILE to GitHub Release"
-            gh release upload "$TAG_NAME" "$ZIP_FILE" --clobber
+            gh release upload "$MANIFEST_VERSION" "dist/$ZIP_FILE" --clobber
             echo "All files uploaded to GitHub Release successfully."
           else
             echo "GitHub CLI is not installed. Skipping upload to GitHub Release."
